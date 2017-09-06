@@ -13,11 +13,11 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
 
   VideoLoader vl("/home/cooplab/field_trees.avi");
+  VideoLoader v2("/home/cooplab/dynamic_test.mp4");
   vl.Run();
+  v2.Run();
   vl.Wait();
-  
-  int temp;
-  cin>>temp;
+  v2.Wait();
 
   return 0;
 }

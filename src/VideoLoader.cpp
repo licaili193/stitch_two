@@ -1,6 +1,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <opencv2/opencv.hpp>
 
 #include "VideoLoader.h"
@@ -11,9 +12,11 @@
 using namespace std;
 using namespace cv;
 
-VideoLoader::VideoLoader(string path)
+VideoLoader::VideoLoader(string path, ros::NodeHandle* nd)
 {
     _filePath = path;
+    n = nd;
+    info_pub = (*n).advertise<std_msgs::String>("stitch_two/process_status", 1000);
     _isStarted = false;
 }
 
@@ -28,6 +31,7 @@ void VideoLoader::Wait()
 {
     _threadList[0].join();
     _threadList[1].join();
+    PublishInfo(4,0,0);
 }
 
 void VideoLoader::loadVideo()
@@ -37,6 +41,7 @@ void VideoLoader::loadVideo()
     if(!cap.isOpened())
     {
         ROS_WARN("%s failed to open", _filePath.c_str());
+        PublishInfo(0,0,0);
         return;
     }
     _videoInfo.length = int(cap.get(CV_CAP_PROP_FRAME_COUNT));
@@ -47,12 +52,15 @@ void VideoLoader::loadVideo()
          _filePath.c_str(),_videoInfo.length,_videoInfo.width,_videoInfo.height,_videoInfo.fps);
 
     Mat frame;
+    int readSum = 1;
     while(cap.read(frame))
     {
         unique_lock<mutex> ul(mu);
         _buffer.push(frame);
         ul.unlock();
         cv.notify_one();
+        readSum++;
+        PublishInfo(2,readSum,_videoInfo.length);
     }
     _isStarted = false;
     cv.notify_one();
@@ -62,6 +70,7 @@ void VideoLoader::loadVideo()
 void VideoLoader::inverseImage()
 {
     ROS_INFO("%s processing", _filePath.c_str());
+    int procSum = 1;
     while(true)
     {
         unique_lock<mutex> ul(mu);
@@ -88,6 +97,8 @@ void VideoLoader::inverseImage()
             }
         }
         _processedFrames.push_back(greyMat);   
+        procSum++;
+        PublishInfo(3,procSum,_videoInfo.length);
     }
     ROS_INFO("%s process frames finished", _filePath.c_str());
 }
@@ -100,4 +111,21 @@ vector<Mat>& VideoLoader::GetProcessedFrames()
 VideoInfo VideoLoader::GetVideoInfo()
 {
     return _videoInfo;
+}
+
+void VideoLoader::PublishInfo(int cmd, int val, int frm)
+{
+    /* cmd  0       1       2       3       4
+            fail    opened  read    proc    finish
+    */
+
+    std_msgs::String msg;
+    
+    std::stringstream ss;
+    ss<<cmd<<"#"<<val<<"$"<<frm;
+    string res = _filePath+":"+ss.str();
+    msg.data = res;
+    lock_guard<mutex>lck(mu_ros);
+    info_pub.publish(msg); 
+    ros::spinOnce();
 }

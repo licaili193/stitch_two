@@ -26,3 +26,9 @@ add_executable(stitch
 )
 
 target_link_libraries(stitch ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+add_executable(info_display 
+   src/info_display.cpp
+)
+
+target_link_libraries(info_display ${catkin_LIBRARIES})

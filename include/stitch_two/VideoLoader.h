@@ -1,3 +1,5 @@
+#include "ros/ros.h"
+#include "std_msgs/String.h"
 #include <thread>
 #include <string>
 #include <vector>
@@ -22,11 +24,15 @@ struct VideoInfo
 
 class VideoLoader
 {
+    ros::NodeHandle* n;
+    ros::Publisher info_pub;
+
     string _filePath;
     vector<thread>_threadList;
     VideoInfo _videoInfo;
 
     mutex mu;
+    mutex mu_ros;
     condition_variable cv;
 
     queue<Mat>_buffer;
@@ -35,8 +41,10 @@ class VideoLoader
 
     void loadVideo();
     void inverseImage();
+
+    void PublishInfo(int cmd, int val, int frm);
 public:
-    VideoLoader(string path);
+    VideoLoader(string path, ros::NodeHandle* nd);
 
     void Run();
     void Wait();

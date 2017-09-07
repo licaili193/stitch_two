@@ -39,11 +39,14 @@ The program will read the two videos into memory first. For each video, a class 
 ### Video resize
 The output video will have the same height as the smaller one of the two videos. Frames of the other video will be resized accordingly to obtain the same height as the output video.
 
-### Synchronizeing
+### Synchronizing
 The output video will have the same frame rate as the smaller one of the two videos. Frames of the other video will be synchronized according to the fps ratio.
 
 ### Video length
 The output video will have the same length as the shorter one of the two videos. The other video will be cut off.
+
+### Progress monitoring
+The current progress of the loading and writing processes will be logged on the terminal in realtime. A ROS subscriber node is designed to receive and output the status information published by the main node.
 
 ## Future improvement
 

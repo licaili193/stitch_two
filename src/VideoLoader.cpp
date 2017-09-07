@@ -58,7 +58,7 @@ void VideoLoader::loadVideo()
     while(cap.read(frame))
     {
         unique_lock<mutex> ul(mu);
-        _buffer.push(frame);
+        _buffer.push(frame.clone());
         ul.unlock();
         cv.notify_one();
         readSum++;

@@ -19,9 +19,13 @@ int Brf = 0;
 int Apf = 0;
 int Bpf = 0;
 
+bool ABUpdated = true;
+
 short OStatus = 0;//0: not opened, 1: failed, 2: opened, 3: finished
 string OName;
 int Oframes = 0;
+
+bool OUpdated = true;
 
 void infoCallback(const std_msgs::String::ConstPtr& msg)
 {
@@ -62,6 +66,7 @@ void infoCallback(const std_msgs::String::ConstPtr& msg)
       else if(cmdchar==5) {BStatus = 2;Brf=Bframes;}
       else if(cmdchar==6) {BStatus = 2;Bpf=Bframes;}
     }
+    ABUpdated = true;
   }
   catch (...){}
 }
@@ -88,6 +93,7 @@ void outcomeCallback(const std_msgs::String::ConstPtr& msg)
       else if(cmdchar==2) {OStatus = 2;Oframes=val1;}
       else if(cmdchar==3) OStatus = 3;
     }
+    OUpdated = true;
   }
   catch (...){}
 }
@@ -128,26 +134,34 @@ int main(int argc, char **argv)
   OName = "/home/cooplab/output.avi";
 
   ros::NodeHandle n;
-  ros::Rate r(1);
+  ros::Rate r(0.1);
   ros::Subscriber sub = n.subscribe("stitch_two/process_status", 1000, infoCallback);
   ros::Subscriber sub_o = n.subscribe("stitch_two/outcome_status", 1000, outcomeCallback);
 
   while(ros::ok())
   {
+    if(ABUpdated)
+    {
       string res = "Video 1: "+Status2String(AStatus)+"    Video 2: "+Status2String(BStatus, false);
       cout<<res.c_str()<<endl;
-      if((AStatus==1||AStatus==3)&&(BStatus==1||BStatus==3)) break;
-      ros::spinOnce();
-      r.sleep();
+      ABUpdated = false;
+    }
+    if((AStatus==1||AStatus==3)&&(BStatus==1||BStatus==3)) break;
+    ros::spinOnce();
+    r.sleep();
   }
 
   while(ros::ok())
   {
+    if(OUpdated)
+    {
       string res = "Outcome video: "+Outcome2String(OStatus);
       cout<<res.c_str()<<endl;
-      if(OStatus==1||OStatus==3) break;
-      ros::spinOnce();
-      r.sleep();
+      OUpdated = false;
+    }
+    if(OStatus==1||OStatus==3) break;
+    ros::spinOnce();
+    r.sleep();
   }
 
   return 0;

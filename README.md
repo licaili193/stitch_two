@@ -15,11 +15,15 @@ Clone the repository into the src directory under the ROS workspace and compile 
 
 ## Usage
 
-* roslaunch stitch_two stitch.launch video_1:=VEDIO_PATH_1 video_2:=VEDIO_PATH_2
+```
+$ roslaunch stitch_two stitch.launch video_1:=VEDIO_PATH_1 video_2:=VEDIO_PATH_2
+```
 
 ### Example
-* roslaunch stitch_two stitch.launch video_1:=$HOME/field_trees.avi video
-_2:=$HOME/dynamic_test.mp4
+
+```
+$ roslaunch stitch_two stitch.launch video_1:=$HOME/field_trees.avi video _2:=$HOME/dynamic_test.mp4
+```
 
 ### Launch file arguments
 * vedio_1 - path of the first video

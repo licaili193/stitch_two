@@ -18,6 +18,7 @@ VideoLoader::VideoLoader(string path, ros::NodeHandle* nd)
     n = nd;
     info_pub = (*n).advertise<std_msgs::String>("stitch_two/process_status", 1000);
     _isStarted = false;
+    _pubTime = ros::Time::now();
 }
 
 void VideoLoader::Run()
@@ -42,6 +43,7 @@ void VideoLoader::loadVideo()
     {
         ROS_WARN("%s failed to open", _filePath.c_str());
         PublishInfo(0,0,0);
+        _isStarted = false;
         return;
     }
     _videoInfo.length = int(cap.get(CV_CAP_PROP_FRAME_COUNT));
@@ -65,6 +67,7 @@ void VideoLoader::loadVideo()
     _isStarted = false;
     cv.notify_one();
     ROS_INFO("%s load frames finished", _filePath.c_str());
+    PublishInfo(5,0,0);
 }
 
 void VideoLoader::inverseImage()
@@ -96,11 +99,12 @@ void VideoLoader::inverseImage()
                 greyMat.at<unsigned char>(i,j) = 255-greyMat.at<unsigned char>(i,j);
             }
         }
-        _processedFrames.push_back(greyMat);   
+        _processedFrames.push_back(greyMat); 
         procSum++;
         PublishInfo(3,procSum,_videoInfo.length);
     }
     ROS_INFO("%s process frames finished", _filePath.c_str());
+    PublishInfo(6,0,0);
 }
 
 vector<Mat>& VideoLoader::GetProcessedFrames()
@@ -115,9 +119,14 @@ VideoInfo VideoLoader::GetVideoInfo()
 
 void VideoLoader::PublishInfo(int cmd, int val, int frm)
 {
-    /* cmd  0       1       2       3       4
-            fail    opened  read    proc    finish
+    /* cmd  0       1       2       3       4       5           6
+            fail    opened  read    proc    finish  read_finish proc_finish
     */
+
+    if(cmd==2||cmd==3)
+    {
+        if(ros::Time::now()<_pubTime+ros::Duration(0.1)) return;
+    }
 
     std_msgs::String msg;
     
@@ -128,4 +137,6 @@ void VideoLoader::PublishInfo(int cmd, int val, int frm)
     lock_guard<mutex>lck(mu_ros);
     info_pub.publish(msg); 
     ros::spinOnce();
+
+    _pubTime = ros::Time::now();
 }

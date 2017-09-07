@@ -26,6 +26,7 @@ class VideoLoader
 {
     ros::NodeHandle* n;
     ros::Publisher info_pub;
+    ros::Time _pubTime;
 
     string _filePath;
     vector<thread>_threadList;

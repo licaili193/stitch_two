@@ -19,16 +19,18 @@ string BName;
 ros::Publisher info_pub;
 ros::Time pubTime;
 
+string fourcc_s = "DIVX";
+
 void PublishInfo(int cmd, int val)
 {
     /* cmd  0       1       2       3     
             fail    opened  render  finish
     */
 
-    if(cmd==2)
-    {
-        if(ros::Time::now()<pubTime+ros::Duration(0.1)) return;
-    }
+    //if(cmd==2)
+    //{
+    //    if(ros::Time::now()<pubTime+ros::Duration(0.1)) return;
+    //}
 
     std_msgs::String msg;
     
@@ -39,7 +41,7 @@ void PublishInfo(int cmd, int val)
     info_pub.publish(msg); 
     ros::spinOnce();
 
-    pubTime = ros::Time::now();
+    //pubTime = ros::Time::now();
 }
 
 int main(int argc, char **argv)
@@ -62,6 +64,13 @@ int main(int argc, char **argv)
     ROS_ERROR("Failed to get param 'video_1'");
     return -1;
   }
+  n.getParam("/fourcc", fourcc_s);
+  if(fourcc_s.size()!=4)
+  {
+    PublishInfo(0,0);
+    ROS_ERROR("must have 4 characters for fourcc");
+    return -1;
+  }
 
   info_pub = n.advertise<std_msgs::String>("stitch_two/outcome_status", 1000);
 
@@ -73,6 +82,13 @@ int main(int argc, char **argv)
   v2.Run();
   v1.Wait();
   v2.Wait();
+
+  if(!v1.IsSucceeded()||!v2.IsSucceeded())
+  {
+    PublishInfo(0,0);
+    ROS_ERROR("stitch video failed");
+    return -1;
+  }
 
   VideoInfo vif1 = v1.GetVideoInfo();
   VideoInfo vif2 = v2.GetVideoInfo();
@@ -100,7 +116,7 @@ int main(int argc, char **argv)
   int mainIndex = 0;
 
   VideoWriter outputVideo;
-  outputVideo.open(outputName, VideoWriter::fourcc('D','I','V','X'), finalFps, Size(finalWidth,finalHeight), false);
+  outputVideo.open(outputName, VideoWriter::fourcc(fourcc_s[0],fourcc_s[1],fourcc_s[2],fourcc_s[3]), finalFps, Size(finalWidth,finalHeight), false);
   if (!outputVideo.isOpened())
   {
     ROS_WARN("%s failed to create video", outputName);

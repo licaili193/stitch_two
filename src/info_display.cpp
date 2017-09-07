@@ -19,13 +19,41 @@ int Brf = 0;
 int Apf = 0;
 int Bpf = 0;
 
-bool ABUpdated = true;
-
 short OStatus = 0;//0: not opened, 1: failed, 2: opened, 3: finished
 string OName;
 int Oframes = 0;
 
-bool OUpdated = true;
+ros::Time tmAB;
+ros::Time tmO;
+string lastMsgAB = "";
+string lastMsgO = ""; 
+
+string Status2String(short a, bool isA = true)
+{
+    if(a==0) return "not opened";
+    else if(a==1) return "failed to open";
+    else if(a==2) 
+    {
+        std::stringstream ss;
+        if(isA) ss<<"read - "<<(Arf*100/Aframes)<<"\% process - "<<(Apf*100/Aframes)<<"\%";
+        else ss<<"read - "<<(Brf*100/Bframes)<<"\% process - "<<(Bpf*100/Bframes)<<"\%";
+        return ss.str();
+    }
+    else if(a==3) return "finished";
+}
+
+string Outcome2String(short a)
+{
+    if(a==0) return "not opened";
+    else if(a==1) return "failed to open";
+    else if(a==2) 
+    {
+        std::stringstream ss;
+        ss<<"rendered frame(s) - "<<Oframes;
+        return ss.str();
+    }
+    else if(a==3) return "finished";
+}
 
 void infoCallback(const std_msgs::String::ConstPtr& msg)
 {
@@ -66,9 +94,13 @@ void infoCallback(const std_msgs::String::ConstPtr& msg)
       else if(cmdchar==5) {BStatus = 2;Brf=Bframes;}
       else if(cmdchar==6) {BStatus = 2;Bpf=Bframes;}
     }
-    ABUpdated = true;
   }
   catch (...){}
+
+  string Result = "Video 1: "+Status2String(AStatus)+"    Video 2: "+Status2String(BStatus, false);
+  if(!(lastMsgAB==Result&&ros::Time::now()-tmAB<ros::Duration(0.1))) cout<<Result.c_str()<<endl;
+  lastMsgAB = Result;
+  tmAB = ros::Time::now();
 }
 
 void outcomeCallback(const std_msgs::String::ConstPtr& msg)
@@ -93,36 +125,12 @@ void outcomeCallback(const std_msgs::String::ConstPtr& msg)
       else if(cmdchar==2) {OStatus = 2;Oframes=val1;}
       else if(cmdchar==3) OStatus = 3;
     }
-    OUpdated = true;
   }
   catch (...){}
-}
-
-string Status2String(short a, bool isA = true)
-{
-    if(a==0) return "not opened";
-    else if(a==1) return "failed to open";
-    else if(a==2) 
-    {
-        std::stringstream ss;
-        if(isA) ss<<"read - "<<(Arf*100/Aframes)<<"\% process - "<<(Apf*100/Aframes)<<"\%";
-        else ss<<"read - "<<(Brf*100/Bframes)<<"\% process - "<<(Bpf*100/Bframes)<<"\%";
-        return ss.str();
-    }
-    else if(a==3) return "finished";
-}
-
-string Outcome2String(short a)
-{
-    if(a==0) return "not opened";
-    else if(a==1) return "failed to open";
-    else if(a==2) 
-    {
-        std::stringstream ss;
-        ss<<"rendered frame(s) - "<<Oframes;
-        return ss.str();
-    }
-    else if(a==3) return "finished";
+  string Result = "Outcome video: "+Outcome2String(OStatus);
+  if(!(lastMsgO==Result&&ros::Time::now()-tmO<ros::Duration(0.1))) cout<<Result.c_str()<<endl;
+  lastMsgO = Result;
+  tmO = ros::Time::now();
 }
  
 int main(int argc, char **argv)
@@ -149,6 +157,8 @@ int main(int argc, char **argv)
     ROS_ERROR("Failed to get param 'video_1'");
     return -1;
   }
+  tmAB = ros::Time::now();
+  tmO = ros::Time::now();
 
   cout<<"Video 1: "<<AName<<endl;
   cout<<"Video 2: "<<BName<<endl;
@@ -158,33 +168,8 @@ int main(int argc, char **argv)
   ros::Subscriber sub = n.subscribe("stitch_two/process_status", 1000, infoCallback);
   ros::Subscriber sub_o = n.subscribe("stitch_two/outcome_status", 1000, outcomeCallback);
 
-  while(ros::ok())
-  {
-    //if(ABUpdated)
-    if(true)
-    {
-      string res = "Video 1: "+Status2String(AStatus)+"    Video 2: "+Status2String(BStatus, false);
-      cout<<res.c_str()<<endl;
-      ABUpdated = false;
-    }
-    if((AStatus==1||AStatus==3)&&(BStatus==1||BStatus==3)) break;
-    ros::spinOnce();
-    r.sleep();
-  }
-
-  while(ros::ok())
-  {
-    //if(OUpdated)
-    if(true)
-    {
-      string res = "Outcome video: "+Outcome2String(OStatus);
-      cout<<res.c_str()<<endl;
-      OUpdated = false;
-    }
-    if(OStatus==1||OStatus==3) break;
-    ros::spinOnce();
-    r.sleep();
-  }
+  ros::MultiThreadedSpinner spinner(0);
+  spinner.spin();
 
   return 0;
 }

@@ -39,11 +39,14 @@ class VideoLoader
     queue<Mat>_buffer;
     vector<Mat>_processedFrames;
     bool _isStarted;
+    bool _openFlag;
+    bool _successFlag;
 
     void loadVideo();
     void inverseImage();
 
     void PublishInfo(int cmd, int val, int frm);
+    int _lastPubcmd;
 public:
     VideoLoader(string path, ros::NodeHandle* nd);
 
@@ -52,6 +55,8 @@ public:
 
     vector<Mat>& GetProcessedFrames();
     VideoInfo GetVideoInfo();
+
+    bool IsSucceeded();
 };
 
 #endif

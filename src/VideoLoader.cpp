@@ -18,6 +18,9 @@ VideoLoader::VideoLoader(string path, ros::NodeHandle* nd)
     n = nd;
     info_pub = (*n).advertise<std_msgs::String>("stitch_two/process_status", 1000);
     _isStarted = false;
+    _successFlag = false;
+    _openFlag = false;
+    _lastPubcmd = -1;
     _pubTime = ros::Time::now();
 }
 
@@ -32,7 +35,8 @@ void VideoLoader::Wait()
 {
     _threadList[0].join();
     _threadList[1].join();
-    PublishInfo(4,0,0);
+    if(_successFlag) PublishInfo(4,0,0);
+    else PublishInfo(0,0,0);
 }
 
 void VideoLoader::loadVideo()
@@ -44,8 +48,10 @@ void VideoLoader::loadVideo()
         ROS_WARN("%s failed to open", _filePath.c_str());
         PublishInfo(0,0,0);
         _isStarted = false;
+        cv.notify_all();
         return;
     }
+    _openFlag = true;
     _videoInfo.length = int(cap.get(CV_CAP_PROP_FRAME_COUNT));
     _videoInfo.width  = int(cap.get(CV_CAP_PROP_FRAME_WIDTH));
     _videoInfo.height = int(cap.get(CV_CAP_PROP_FRAME_HEIGHT));
@@ -103,8 +109,17 @@ void VideoLoader::inverseImage()
         procSum++;
         PublishInfo(3,procSum,_videoInfo.length);
     }
-    ROS_INFO("%s process frames finished", _filePath.c_str());
-    PublishInfo(6,0,0);
+    if(_openFlag) 
+    {
+        _successFlag = true;
+        ROS_INFO("%s process frames finished", _filePath.c_str());
+        PublishInfo(6,0,0);
+    }
+    else
+    {
+        ROS_ERROR("%s failed to process", _filePath.c_str());
+        PublishInfo(0,0,0);
+    }
 }
 
 vector<Mat>& VideoLoader::GetProcessedFrames()
@@ -123,10 +138,10 @@ void VideoLoader::PublishInfo(int cmd, int val, int frm)
             fail    opened  read    proc    finish  read_finish proc_finish
     */
 
-    if(cmd==2||cmd==3)
-    {
-        if(ros::Time::now()<_pubTime+ros::Duration(0.1)) return;
-    }
+    //if(cmd==_lastPubcmd)
+    //{
+    //    if(ros::Time::now()<_pubTime+ros::Duration(0.1)) return;
+    //}
 
     std_msgs::String msg;
     
@@ -138,5 +153,11 @@ void VideoLoader::PublishInfo(int cmd, int val, int frm)
     info_pub.publish(msg); 
     ros::spinOnce();
 
-    _pubTime = ros::Time::now();
+    //_lastPubcmd = cmd;
+    //_pubTime = ros::Time::now();
+}
+
+bool VideoLoader::IsSucceeded()
+{
+    return _successFlag;
 }

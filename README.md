@@ -22,7 +22,7 @@ $ roslaunch stitch_two stitch.launch video_1:=VEDIO_PATH_1 video_2:=VEDIO_PATH_2
 ### Example
 
 ```
-$ roslaunch stitch_two stitch.launch video_1:=$HOME/field_trees.avi video _2:=$HOME/dynamic_test.mp4
+$ roslaunch stitch_two stitch.launch video_1:=$HOME/field_trees.avi video_2:=$HOME/dynamic_test.mp4
 ```
 
 ### Launch file arguments

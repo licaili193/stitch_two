@@ -129,18 +129,39 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "info_display");
 
-  AName = "/home/cooplab/field_trees.avi";
-  BName = "/home/cooplab/dynamic_test.mp4";
-  OName = "/home/cooplab/output.avi";
+  //AName = "/home/cooplab/field_trees.avi";
+  //BName = "/home/cooplab/dynamic_test.mp4";
+  //OName = "/home/cooplab/output.avi";
 
   ros::NodeHandle n;
+  if (!n.getParam("/video_1", AName))
+  {
+    ROS_ERROR("Failed to get param 'video_1'");
+    return -1;
+  }
+  if (!n.getParam("/video_2", BName))
+  {
+    ROS_ERROR("Failed to get param 'video_2'");
+    return -1;
+  }
+  if (!n.getParam("/video_out", OName))
+  {
+    ROS_ERROR("Failed to get param 'video_1'");
+    return -1;
+  }
+
+  cout<<"Video 1: "<<AName<<endl;
+  cout<<"Video 2: "<<BName<<endl;
+  cout<<"Video output: "<<OName<<endl;
+
   ros::Rate r(0.1);
   ros::Subscriber sub = n.subscribe("stitch_two/process_status", 1000, infoCallback);
   ros::Subscriber sub_o = n.subscribe("stitch_two/outcome_status", 1000, outcomeCallback);
 
   while(ros::ok())
   {
-    if(ABUpdated)
+    //if(ABUpdated)
+    if(true)
     {
       string res = "Video 1: "+Status2String(AStatus)+"    Video 2: "+Status2String(BStatus, false);
       cout<<res.c_str()<<endl;
@@ -153,7 +174,8 @@ int main(int argc, char **argv)
 
   while(ros::ok())
   {
-    if(OUpdated)
+    //if(OUpdated)
+    if(true)
     {
       string res = "Outcome video: "+Outcome2String(OStatus);
       cout<<res.c_str()<<endl;

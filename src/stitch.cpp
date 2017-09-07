@@ -13,6 +13,8 @@ using namespace std;
 using namespace cv;
 
 string outputName;
+string AName;
+string BName;
 
 ros::Publisher info_pub;
 ros::Time pubTime;
@@ -45,12 +47,28 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "stitch");
   ros::NodeHandle n;
 
+  if (!n.getParam("/video_1", AName))
+  {
+    ROS_ERROR("Failed to get param 'video_1'");
+    return -1;
+  }
+  if (!n.getParam("/video_2", BName))
+  {
+    ROS_ERROR("Failed to get param 'video_2'");
+    return -1;
+  }
+  if (!n.getParam("/video_out", outputName))
+  {
+    ROS_ERROR("Failed to get param 'video_1'");
+    return -1;
+  }
+
   info_pub = n.advertise<std_msgs::String>("stitch_two/outcome_status", 1000);
 
-  outputName = "/home/cooplab/output.avi";
+  //outputName = "/home/cooplab/output.avi";
 
-  VideoLoader v1("/home/cooplab/field_trees.avi", &n);
-  VideoLoader v2("/home/cooplab/dynamic_test.mp4", &n);
+  VideoLoader v1(AName, &n);
+  VideoLoader v2(BName, &n);
   v1.Run();
   v2.Run();
   v1.Wait();

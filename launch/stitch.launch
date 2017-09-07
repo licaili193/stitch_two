@@ -1,0 +1,10 @@
+<launch>
+    <arg name="video_1" />
+	<arg name="video_2" />
+	<arg name="video_out" default="$(env HOME)/output.avi" />
+    <param name="video_1" value="$(arg video_1)" type="str"/>
+	<param name="video_2" value="$(arg video_2)" type="str"/>
+	<param name="video_out" value="$(arg video_out)" type="str"/>
+	<node pkg="stitch_two" type="info_display" name="info_display" output="screen"/>
+    <node pkg="stitch_two" type="stitch" name="stitch" output="log" required="true"/>
+</launch>
